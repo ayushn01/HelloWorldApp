@@ -1,0 +1,227 @@
+﻿@using HelloWorld.Models
+@using System.Security.Claims
+@model List<ApplicationUser>
+
+@{
+    ViewData["Title"] = "Chat";
+    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+}
+
+<div class="container chat-matrix">
+    <h3 class="mb-3">@ViewData["Title"]</h3>
+    <div class="row chat-row">
+        <!-- Contacts Panel -->
+        <div class="contacts-panel">
+            <ul class="list-group users-list" id="usersList">
+                @foreach (var user in Model.Where(u => u.Id != currentUserId))
+                {
+                    <li class="user-item" data-userid="@user.Id">
+                        <div class="user-avatar">@user.UserName.Substring(0, 1)</div>
+                        <div>@user.UserName</div>
+                    </li>
+                }
+            </ul>
+        </div>
+        <!-- Chat Panel -->
+        <div class="chat-panel">
+            <div id="chatWindow" class="chat-window">
+                <div id="messageContainer" class="message-list"></div>
+            </div>
+            <div class="chat-input-container">
+                <input type="text" id="messageInput" placeholder="Type a message" disabled autocomplete="off" />
+                <button id="sendBtn" disabled>Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script>
+        let selectedUserId = null;
+
+        // Contact selection
+        document.getElementById("usersList").addEventListener("click", function(e) {
+            let target = e.target;
+            while (target && !target.classList.contains("user-item")) {
+                target = target.parentElement;
+            }
+            if (!target) return;
+            document.querySelectorAll(".user-item").forEach(item => item.classList.remove("active"));
+            target.classList.add("active");
+            selectedUserId = target.dataset.userid;
+            console.log('User selected:', selectedUserId);
+            document.getElementById("messageInput").disabled = false;
+            document.getElementById("sendBtn").disabled = false;
+            loadMessages(selectedUserId);
+        });
+
+        async function loadMessages(userId) {
+            const response = await fetch(`/Chat/GetMessages?userId=${userId}`);
+            const messages = await response.json();
+            const messageContainer = document.getElementById("messageContainer");
+            messageContainer.innerHTML = "";
+            for (let msg of messages) {
+                const div = document.createElement("div");
+                div.classList.add("message");
+                if (msg.senderId === '@currentUserId') {
+                    div.classList.add("sent");
+                } else {
+                    div.classList.add("received");
+                    if (!msg.isRead) {
+                        markMessageAsRead(msg.id);
+                    }
+                }
+                div.textContent = msg.text;
+                div.dataset.messageId = msg.id;
+
+                const ts = document.createElement("div");
+                ts.className = "timestamp";
+                ts.textContent = new Date(msg.sentAt).toLocaleTimeString();
+
+                if (msg.senderId === '@currentUserId') {
+                    const rr = document.createElement("span");
+                    rr.className = "read-receipt";
+                    rr.innerHTML = msg.isRead ? "✓✓" : "✓";
+                    if (!msg.isRead) rr.classList.add("unread");
+                    div.appendChild(rr);
+                }
+
+                messageContainer.appendChild(div);
+                messageContainer.appendChild(ts);
+            }
+            // messageContainer.scrollTop = messageContainer.scrollHeight;
+
+                    const chatWindow = document.getElementById("chatWindow");
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        }
+
+        async function markMessageAsRead(messageId) {
+            await fetch('/Chat/MarkAsRead', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(messageId)
+            });
+        }
+
+        const connection = new signalR.HubConnectionBuilder().withUrl("/chathub").build();
+
+        connection.on("ReceiveMessage", function(senderId, message, messageId) {
+            if (senderId === selectedUserId) {
+                const messageContainer = document.getElementById("messageContainer");
+
+                const div = document.createElement("div");
+                div.classList.add("message", "received");
+                div.textContent = message;
+                div.dataset.messageId = messageId;
+
+                const ts = document.createElement("div");
+                ts.className = "timestamp";
+                ts.textContent = new Date().toLocaleTimeString();
+
+                messageContainer.appendChild(div);
+                messageContainer.appendChild(ts);
+                // messageContainer.scrollTop = messageContainer.scrollHeight;
+
+                        const chatWindow = document.getElementById("chatWindow");
+                        chatWindow.scrollTop = chatWindow.scrollHeight;
+
+
+                // Mark incoming message as read
+                markMessageAsRead(messageId);
+            }
+        });
+
+        connection.on("MessageRead", function(messageId) {
+            const messages = document.querySelectorAll(".message.sent");
+            messages.forEach(msg => {
+                if (msg.dataset.messageId == messageId) {
+                    const receipt = msg.querySelector(".read-receipt");
+                    if (receipt) {
+                        receipt.innerHTML = "✓✓";
+                        receipt.classList.remove("unread");
+                    }
+                }
+            });
+        });
+
+        connection.start().then(() => {
+            console.log('SignalR connected.');
+        }).catch(err => {
+            console.error('SignalR connection error: ', err.toString());
+        });
+
+        document.getElementById("sendBtn").addEventListener("click", async () => {
+            const msgInput = document.getElementById("messageInput");
+            const msg = msgInput.value.trim();
+
+            console.log('Send button clicked. Message:', msg, 'Selected User:', selectedUserId);
+
+            if (!msg) {
+                console.warn('Send blocked: message is empty.');
+                return;
+            }
+
+            if (!selectedUserId) {
+                console.warn('Send blocked: no user selected.');
+                return;
+            }
+
+            if (connection.state !== signalR.HubConnectionState.Connected) {
+                console.error('SignalR connection not established.');
+                return;
+            }
+
+            try {
+                await connection.invoke("SendMessage", "@currentUserId", selectedUserId, msg);
+                console.log('Message sent to SignalR hub.');
+
+                const response = await fetch('/Chat/SaveMessage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ receiverId: selectedUserId, messageText: msg })
+                });
+
+                if (!response.ok) {
+                    console.error('Failed to save message. Status:', response.status);
+                    return;
+                }
+                console.log('Message saved via API.');
+
+                // Append locally
+                const messageContainer = document.getElementById("messageContainer");
+                const div = document.createElement("div");
+                div.classList.add("message", "sent");
+                div.textContent = msg;
+
+                const ts = document.createElement("div");
+                ts.className = "timestamp";
+                ts.textContent = new Date().toLocaleTimeString();
+
+                const rr = document.createElement("span");
+                rr.className = "read-receipt unread";
+                rr.innerHTML = "✓";
+
+                div.appendChild(rr);
+
+                messageContainer.appendChild(div);
+                messageContainer.appendChild(ts);
+                // messageContainer.scrollTop = messageContainer.scrollHeight;
+                    const chatWindow = document.getElementById("chatWindow");
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+
+                msgInput.value = "";
+            } catch (error) {
+                console.error('Error sending message:', error);
+            }
+        });
+
+        document.getElementById("messageInput").addEventListener("keydown", function(e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById("sendBtn").click();
+            }
+        });
+    </script>
+}

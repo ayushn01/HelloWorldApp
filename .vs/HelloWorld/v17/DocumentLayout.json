@@ -1,0 +1,79 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\ayush\\OneDrive\\Desktop\\PROJECTS\\Visual Studio repos\\HelloWorld\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{32A6AC3F-4739-48D3-A3BB-A211F0A666D8}|HelloWorld\\HelloWorld.csproj|c:\\users\\ayush\\onedrive\\desktop\\projects\\visual studio repos\\helloworld\\helloworld\\wwwroot\\css\\site.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
+      "RelativeMoniker": "D:0:0:{32A6AC3F-4739-48D3-A3BB-A211F0A666D8}|HelloWorld\\HelloWorld.csproj|solutionrelative:helloworld\\wwwroot\\css\\site.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{32A6AC3F-4739-48D3-A3BB-A211F0A666D8}|HelloWorld\\HelloWorld.csproj|c:\\users\\ayush\\onedrive\\desktop\\projects\\visual studio repos\\helloworld\\helloworld\\wwwroot\\css\\chatstyles.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
+      "RelativeMoniker": "D:0:0:{32A6AC3F-4739-48D3-A3BB-A211F0A666D8}|HelloWorld\\HelloWorld.csproj|solutionrelative:helloworld\\wwwroot\\css\\chatstyles.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{32A6AC3F-4739-48D3-A3BB-A211F0A666D8}|HelloWorld\\HelloWorld.csproj|c:\\users\\ayush\\onedrive\\desktop\\projects\\visual studio repos\\helloworld\\helloworld\\views\\chat\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{32A6AC3F-4739-48D3-A3BB-A211F0A666D8}|HelloWorld\\HelloWorld.csproj|solutionrelative:helloworld\\views\\chat\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{d78612c7-9962-4b83-95d9-268046dad23a}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{34e76e81-ee4a-11d0-ae2e-00a0c90fffc3}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "site.css",
+              "DocumentMoniker": "C:\\Users\\ayush\\OneDrive\\Desktop\\PROJECTS\\Visual Studio repos\\HelloWorld\\HelloWorld\\wwwroot\\css\\site.css",
+              "RelativeDocumentMoniker": "HelloWorld\\wwwroot\\css\\site.css",
+              "ToolTip": "C:\\Users\\ayush\\OneDrive\\Desktop\\PROJECTS\\Visual Studio repos\\HelloWorld\\HelloWorld\\wwwroot\\css\\site.css",
+              "RelativeToolTip": "HelloWorld\\wwwroot\\css\\site.css",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACMAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
+              "WhenOpened": "2025-09-19T09:20:18.928Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "chatstyles.css",
+              "DocumentMoniker": "C:\\Users\\ayush\\OneDrive\\Desktop\\PROJECTS\\Visual Studio repos\\HelloWorld\\HelloWorld\\wwwroot\\css\\chatstyles.css",
+              "RelativeDocumentMoniker": "HelloWorld\\wwwroot\\css\\chatstyles.css",
+              "ToolTip": "C:\\Users\\ayush\\OneDrive\\Desktop\\PROJECTS\\Visual Studio repos\\HelloWorld\\HelloWorld\\wwwroot\\css\\chatstyles.css",
+              "RelativeToolTip": "HelloWorld\\wwwroot\\css\\chatstyles.css",
+              "ViewState": "AgIAAEkAAAAAAAAAAAAAAFYAAAAZAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
+              "WhenOpened": "2025-09-17T14:48:53.991Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Index.cshtml",
+              "DocumentMoniker": "C:\\Users\\ayush\\OneDrive\\Desktop\\PROJECTS\\Visual Studio repos\\HelloWorld\\HelloWorld\\Views\\Chat\\Index.cshtml",
+              "RelativeDocumentMoniker": "HelloWorld\\Views\\Chat\\Index.cshtml",
+              "ToolTip": "C:\\Users\\ayush\\OneDrive\\Desktop\\PROJECTS\\Visual Studio repos\\HelloWorld\\HelloWorld\\Views\\Chat\\Index.cshtml",
+              "RelativeToolTip": "HelloWorld\\Views\\Chat\\Index.cshtml",
+              "ViewState": "AgIAAMgAAAAAAAAAAADwv+MAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-09-16T16:03:28.206Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
