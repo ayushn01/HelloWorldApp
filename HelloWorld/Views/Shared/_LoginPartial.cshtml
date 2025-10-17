@@ -24,3 +24,23 @@ else
     </li>
 }
 </ul>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var logoutForm = document.querySelector('form[action*="Logout"]');
+        if (logoutForm) {
+            logoutForm.addEventListener('submit', function () {
+                if (window.connection) {
+                    window.connection.stop();
+                    window.connection = null;
+                    window.signalRInitialized = false;
+
+                }
+                var messageContainer = document.getElementById('messageContainer');
+                if (messageContainer) {
+                    messageContainer.innerHTML = '';
+                }
+            });
+        }
+    });
+</script>
+

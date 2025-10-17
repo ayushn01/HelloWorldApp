@@ -104,6 +104,10 @@ namespace HelloWorld.Data.Migrations
                     b.Property<bool>("IsRead")
                         .HasColumnType("bit");
 
+                    b.Property<string>("MessageGuid")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<DateTime?>("ReadAt")
                         .HasColumnType("datetime2");
 
@@ -123,6 +127,9 @@ namespace HelloWorld.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("MessageGuid")
+                        .IsUnique();
 
                     b.ToTable("Messages");
                 });

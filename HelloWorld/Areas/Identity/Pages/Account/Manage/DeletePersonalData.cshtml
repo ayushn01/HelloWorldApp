@@ -1,0 +1,14 @@
+﻿@page
+@model HelloWorld.Areas.Identity.Pages.Account.Manage.DeletePersonalDataModel
+@{
+    ViewData["Title"] = "Delete Account";
+}
+
+<h2>Delete Your Account</h2>
+
+<p>This will delete your account immediately.</p>
+
+<form method="post" onsubmit="return confirm('Are you sure? This action cannot be undone!');">
+    @Html.AntiForgeryToken()
+    <button type="submit" class="btn btn-danger">Delete Account</button>
+</form>

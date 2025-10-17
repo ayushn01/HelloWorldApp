@@ -62,6 +62,14 @@ wwwroot\lib\jquery\dist\jquery.slim.js
 wwwroot\lib\jquery\dist\jquery.slim.min.js
 wwwroot\lib\jquery\dist\jquery.slim.min.map
 wwwroot\lib\jquery\LICENSE.txt
+wwwroot\logo.png
+wwwroot\uploads\05aa8ee2-5ee8-4a2f-aa31-44f93672fc31.png
+wwwroot\uploads\281332ed-2585-4141-b791-4f1bbef87fe8.png
+wwwroot\uploads\2c82e8cf-e104-40a6-bd03-a024b6d577ac.png
+wwwroot\uploads\4ef046ae-3202-4587-8d3b-38b8e508ee0a.png
+wwwroot\uploads\550d04cb-67d4-468e-a3f3-1f216f5b3ef9.png
+wwwroot\uploads\5bf140e0-c56f-48df-aaf4-0351557cb1f0.png
+wwwroot\uploads\6b66e8b2-0265-4c17-bfd0-959cd3ee14a8.png
 C:\Users\ayush\OneDrive\Desktop\PROJECTS\Visual Studio repos\HelloWorld\HelloWorld\wwwroot\css\chatstyles.css
 C:\Users\ayush\OneDrive\Desktop\PROJECTS\Visual Studio repos\HelloWorld\HelloWorld\wwwroot\css\site.css
 C:\Users\ayush\OneDrive\Desktop\PROJECTS\Visual Studio repos\HelloWorld\HelloWorld\wwwroot\favicon.ico

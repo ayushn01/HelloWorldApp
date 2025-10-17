@@ -1,12 +1,14 @@
-using System.Diagnostics;
 using HelloWorld.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 
 namespace HelloWorld.Controllers
 {
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly SignInManager<ApplicationUser> _signInManager;
 
         public HomeController(ILogger<HomeController> logger)
         {
@@ -27,6 +29,15 @@ namespace HelloWorld.Controllers
         {
             return RedirectToAction("Index", "Chat");
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+            return RedirectToAction("Index", "Home");
+        }
+
 
     }
 }

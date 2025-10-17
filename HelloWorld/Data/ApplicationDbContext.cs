@@ -9,5 +9,15 @@ namespace HelloWorld.Data
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         public DbSet<Message> Messages { get; set; } = null!;
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Message>()
+                .HasIndex(m => m.MessageGuid)
+                .IsUnique();
+        }
     }
 }
+
+

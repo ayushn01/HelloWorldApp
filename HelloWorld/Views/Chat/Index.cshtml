@@ -6,26 +6,44 @@
     ViewData["Title"] = "Chat";
     var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 }
+@Html.AntiForgeryToken()
 
+<canvas id="matrixCanvas"></canvas>
 <div class="container chat-matrix">
-    <h3 class="mb-3">@ViewData["Title"]</h3>
+    <div class="chat-top-bar matrix-header">
+        <span class="chat-title matrix-glow">  Users List:</span>
+        <div class="chat-actions matrix-actions">
+            <a href="/Home/Index" class="chat-btn matrix-btn">Home</a>
+            <span class="chat-user matrix-glow">Hello @User.Identity.Name</span>
+            <form asp-controller="Account" asp-action="Logout" method="post" style="display:inline;">
+                <button type="submit" class="chat-btn matrix-btn">Log out</button>
+            </form>
+            <form asp-controller="Account" asp-action="Delete" method="post" style="display:inline;"
+                  onsubmit="return confirm('Are you sure you want to delete your account? This cannot be undone!');">
+                <button type="submit" class="chat-btn-danger matrix-btn matrix-btn-danger">Delete Account</button>
+            </form>
+        </div>
+    </div>
+
     <div class="row chat-row">
         <!-- Contacts Panel -->
         <div class="contacts-panel">
-            <ul class="list-group users-list" id="usersList">
+            <ul class="list-group users-list" id="usersList" role="listbox" aria-label="Contacts list">
                 @foreach (var user in Model.Where(u => u.Id != currentUserId))
                 {
-                    <li class="user-item" data-userid="@user.Id">
-                        <div class="user-avatar">@user.UserName.Substring(0, 1)</div>
+                    <li class="user-item" data-userid="@user.Id" role="option" tabindex="0" aria-selected="false">
+                        <div class="user-avatar offline">@user.UserName.Substring(0, 1)</div>
                         <div>@user.UserName</div>
                     </li>
                 }
             </ul>
         </div>
+
         <!-- Chat Panel -->
         <div class="chat-panel">
             <div id="chatWindow" class="chat-window">
-                <div id="messageContainer" class="message-list"></div>
+                <div id="messageContainer" class="message-list">
+                </div>
             </div>
             <div class="chat-input-container">
                 <input type="text" id="messageInput" placeholder="Type a message" disabled autocomplete="off" />
@@ -37,191 +55,471 @@
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
     <script>
-        let selectedUserId = null;
+            const currentUserId = '@User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier)';
+            let selectedUserId = null;
 
-        // Contact selection
-        document.getElementById("usersList").addEventListener("click", function(e) {
-            let target = e.target;
-            while (target && !target.classList.contains("user-item")) {
-                target = target.parentElement;
-            }
-            if (!target) return;
-            document.querySelectorAll(".user-item").forEach(item => item.classList.remove("active"));
-            target.classList.add("active");
-            selectedUserId = target.dataset.userid;
-            console.log('User selected:', selectedUserId);
-            document.getElementById("messageInput").disabled = false;
-            document.getElementById("sendBtn").disabled = false;
-            loadMessages(selectedUserId);
-        });
-
-        async function loadMessages(userId) {
-            const response = await fetch(`/Chat/GetMessages?userId=${userId}`);
-            const messages = await response.json();
-            const messageContainer = document.getElementById("messageContainer");
-            messageContainer.innerHTML = "";
-            for (let msg of messages) {
-                const div = document.createElement("div");
-                div.classList.add("message");
-                if (msg.senderId === '@currentUserId') {
-                    div.classList.add("sent");
-                } else {
-                    div.classList.add("received");
-                    if (!msg.isRead) {
-                        markMessageAsRead(msg.id);
+                document.addEventListener('DOMContentLoaded', function () {
+            const usersList = document.getElementById('usersList');
+            if (usersList) {
+                usersList.addEventListener('click', function (e) {
+                    let target = e.target;
+                    while (target && !target.classList.contains('user-item')) {
+                        target = target.parentElement;
                     }
-                }
-                div.textContent = msg.text;
-                div.dataset.messageId = msg.id;
+                    if (!target) return;
 
-                const ts = document.createElement("div");
-                ts.className = "timestamp";
-                ts.textContent = new Date(msg.sentAt).toLocaleTimeString();
+                    console.log("User clicked:", target.dataset.userid);
+                    document.querySelectorAll('.user-item').forEach(i => i.classList.remove('active'));
+                    target.classList.add('active');
+                            usersList.addEventListener('keydown', function (e) {
+                const focused = document.activeElement;
+                if (!focused || !focused.classList.contains('user-item')) return;
 
-                if (msg.senderId === '@currentUserId') {
-                    const rr = document.createElement("span");
-                    rr.className = "read-receipt";
-                    rr.innerHTML = msg.isRead ? "✓✓" : "✓";
-                    if (!msg.isRead) rr.classList.add("unread");
-                    div.appendChild(rr);
-                }
-
-                messageContainer.appendChild(div);
-                messageContainer.appendChild(ts);
-            }
-            // messageContainer.scrollTop = messageContainer.scrollHeight;
-
-                    const chatWindow = document.getElementById("chatWindow");
-                    chatWindow.scrollTop = chatWindow.scrollHeight;
-
-        }
-
-        async function markMessageAsRead(messageId) {
-            await fetch('/Chat/MarkAsRead', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(messageId)
-            });
-        }
-
-        const connection = new signalR.HubConnectionBuilder().withUrl("/chathub").build();
-
-        connection.on("ReceiveMessage", function(senderId, message, messageId) {
-            if (senderId === selectedUserId) {
-                const messageContainer = document.getElementById("messageContainer");
-
-                const div = document.createElement("div");
-                div.classList.add("message", "received");
-                div.textContent = message;
-                div.dataset.messageId = messageId;
-
-                const ts = document.createElement("div");
-                ts.className = "timestamp";
-                ts.textContent = new Date().toLocaleTimeString();
-
-                messageContainer.appendChild(div);
-                messageContainer.appendChild(ts);
-                // messageContainer.scrollTop = messageContainer.scrollHeight;
-
-                        const chatWindow = document.getElementById("chatWindow");
-                        chatWindow.scrollTop = chatWindow.scrollHeight;
-
-
-                // Mark incoming message as read
-                markMessageAsRead(messageId);
-            }
-        });
-
-        connection.on("MessageRead", function(messageId) {
-            const messages = document.querySelectorAll(".message.sent");
-            messages.forEach(msg => {
-                if (msg.dataset.messageId == messageId) {
-                    const receipt = msg.querySelector(".read-receipt");
-                    if (receipt) {
-                        receipt.innerHTML = "✓✓";
-                        receipt.classList.remove("unread");
-                    }
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setActiveUser(focused);
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (focused.nextElementSibling) focused.nextElementSibling.focus();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (focused.previousElementSibling) focused.previousElementSibling.focus();
                 }
             });
-        });
 
-        connection.start().then(() => {
-            console.log('SignalR connected.');
-        }).catch(err => {
-            console.error('SignalR connection error: ', err.toString());
-        });
-
-        document.getElementById("sendBtn").addEventListener("click", async () => {
-            const msgInput = document.getElementById("messageInput");
-            const msg = msgInput.value.trim();
-
-            console.log('Send button clicked. Message:', msg, 'Selected User:', selectedUserId);
-
-            if (!msg) {
-                console.warn('Send blocked: message is empty.');
-                return;
-            }
-
-            if (!selectedUserId) {
-                console.warn('Send blocked: no user selected.');
-                return;
-            }
-
-            if (connection.state !== signalR.HubConnectionState.Connected) {
-                console.error('SignalR connection not established.');
-                return;
-            }
-
-            try {
-                await connection.invoke("SendMessage", "@currentUserId", selectedUserId, msg);
-                console.log('Message sent to SignalR hub.');
-
-                const response = await fetch('/Chat/SaveMessage', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ receiverId: selectedUserId, messageText: msg })
+            function setActiveUser(target) {
+                document.querySelectorAll('.user-item').forEach(item => {
+                    item.classList.remove('active');
+                    item.setAttribute('aria-selected', 'false');
                 });
 
-                if (!response.ok) {
-                    console.error('Failed to save message. Status:', response.status);
+                target.classList.add('active');
+                target.setAttribute('aria-selected', 'true');
+
+                selectedUserId = target.dataset.userid;
+
+                document.getElementById('messageInput').disabled = false;
+                document.getElementById('sendBtn').disabled = false;
+
+                const container = document.getElementById('messageContainer');
+                container.innerHTML = '';
+
+                if (window.connection) {
+                    window.connection.stop().catch(() => {});
+                    window.connection = null;
+                    window.signalRInitialized = false;
+                }
+
+                initSignalR();
+                loadMessages(selectedUserId);
+            }
+
+                    selectedUserId = target.dataset.userid;
+
+                    document.getElementById('messageInput').disabled = false;
+                    document.getElementById('sendBtn').disabled = false;
+
+                    const container = document.getElementById('messageContainer');
+                    container.innerHTML = '';
+
+                    if (window.connection) {
+                        window.connection.stop().catch(() => { });
+                        window.connection = null;
+                        window.signalRInitialized = false;
+                    }
+
+                    initSignalR();
+                    loadMessages(selectedUserId);
+                });
+            }
+
+                    const sendBtn = document.getElementById('sendBtn');
+            if (sendBtn) {
+                sendBtn.addEventListener('click', async () => {
+                    const input = document.getElementById('messageInput');
+                    const text = input.value.trim();
+
+                    if (!text || !selectedUserId || !window.connection || window.connection.state !== signalR.HubConnectionState.Connected) {
+                        console.log('Send skipped: conditions not met');
+                        return;
+                    }
+
+                    sendBtn.disabled = true;
+
+                    try {
+                        const messageGuid = crypto.randomUUID ? crypto.randomUUID() : generateUUIDFallback();
+
+                        await window.connection.invoke('SendMessage', currentUserId, selectedUserId, text, messageGuid);
+
+                        const response = await fetch('/Chat/SaveMessage', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                receiverId: selectedUserId,
+                                messageText: text,
+                                messageGuid: messageGuid
+                            }),
+                        });
+
+                        if (response.ok) {
+                            const result = await response.json();
+                            input.value = '';
+                        }
+                        else {
+                            alert("Failed to send message");
+                        }
+                    } catch (err) {
+                        console.error(err);
+                    } finally {
+                        sendBtn.disabled = false;
+                    }
+                });
+
+                function generateUUIDFallback() {
+                    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                        const r = Math.random() * 16 | 0,
+                            v = c == 'x' ? r : (r & 0x3 | 0x8);
+                        return v.toString(16);
+                    });
+                }
+            }
+
+                const messageInput = document.getElementById('messageInput');
+                if (messageInput) {
+                    messageInput.addEventListener('keydown', function (e) {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            if (sendBtn && !sendBtn.disabled) {
+                                sendBtn.click();
+                            }
+                        }
+                    });
+                }
+
+                    const container = document.getElementById('messageContainer');
+            if (container) {
+                container.addEventListener('click', async (e) => {
+                    if (e.target.classList.contains('delete-btn')) {
+                        const btn = e.target;
+                        const messageId = btn.dataset.messageId;
+
+                        if (!messageId) {
+                            console.error('Delete button without messageId');
+                            return;
+                        }
+
+                        if (!confirm("Are you sure you want to delete this message?")) {
+                            return;
+                        }
+
+                        const token = document.querySelector("input[name='__RequestVerificationToken']").value;
+
+                        const response = await fetch('/DeleteMessage', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': token
+                            },
+                            body: JSON.stringify({ messageId: parseInt(messageId) })
+                        });
+
+                        if (response.ok) {
+                            btn.closest('.message').remove();
+                        } else {
+                            alert("Failed to delete message");
+                        }
+                    }
+                });
+            }
+
+            });
+
+            async function loadMessages(userId) {
+                const response = await fetch(`/Chat/GetMessages?userId=${userId}`);
+                const messages = await response.json();
+                const container = document.getElementById('messageContainer');
+                container.innerHTML = '';
+
+                    for (const msg of messages) {
+                const isReadClient = readMessageIds.has(msg.id);
+                const isRead = isReadClient || msg.isRead;
+
+                appendMessageDOM(msg.text, msg.id, msg.senderId === currentUserId ? 'sent' : 'received', msg.sentAt, isRead);
+
+                if (msg.senderId !== currentUserId && !isRead) {
+                    markAsRead(msg.id);
+                }
+            }
+
+            const chatWindow = document.getElementById('chatWindow');
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            }
+                    let lastDateString = null;
+
+        function formatDateSeparator(date) {
+          const today = new Date();
+          const yesterday = new Date();
+          yesterday.setDate(today.getDate() - 1);
+          if (date.toDateString() === today.toDateString()) return "Today";
+          if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+          return date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
+            function appendMessageDOM(text, id, type, sentAt = null, isRead = false) {
+                const container = document.getElementById('messageContainer');
+                const div = document.createElement('div');
+                div.classList.add('message', type);
+                div.dataset.messageId = id;
+                const messageDate = sentAt ? new Date(sentAt) : new Date();
+                const messageDateString = messageDate.toDateString();
+                      if (lastDateString !== messageDateString) {
+          lastDateString = messageDateString;
+          const dateDiv = document.createElement("div");
+          dateDiv.className = "date-separator";
+          dateDiv.textContent = formatDateSeparator(messageDate);
+          container.appendChild(dateDiv);
+        }
+
+                        const textDiv = document.createElement('div');
+            textDiv.classList.add('message-text');
+            textDiv.textContent = text;
+            div.appendChild(textDiv);
+
+            const metaDiv = document.createElement('div');
+            metaDiv.classList.add('message-meta');
+
+            const ts = document.createElement('span');
+            ts.className = 'bubble-timestamp';
+            ts.textContent = sentAt ? new Date(sentAt + 'Z').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    if (type === 'sent') {
+            ts.style.fontSize = '1em';
+            ts.style.color = '#ccc';
+        } else {
+            ts.style.fontSize = '0.7em';
+            ts.style.color = '#ccc';
+        }
+
+
+            if (type === 'sent') {
+                const tickSpan = document.createElement('span');
+                tickSpan.className = 'message-ticks';
+                tickSpan.textContent = isRead ? '✓✓' : '✓';
+                tickSpan.style.color = isRead ? '#4CAF50' : 'grey';
+                tickSpan.style.userSelect = 'none';
+                tickSpan.style.fontSize = '1.2em';
+                tickSpan.style.verticalAlign = 'middle';
+
+                metaDiv.appendChild(tickSpan);
+            }
+
+            metaDiv.appendChild(ts);
+            div.appendChild(metaDiv);
+
+            if (type === 'sent') {
+                const delBtn = document.createElement('button');
+                delBtn.textContent = 'X';
+                delBtn.title = 'Delete';
+                delBtn.className = 'delete-btn btn btn-sm btn-danger';
+                delBtn.style.position = 'absolute';
+                delBtn.style.top = '10px';
+                delBtn.style.right = '5px';
+                delBtn.style.display = 'none';
+                delBtn.dataset.messageId = id;
+                delBtn.style.backgroundColor = '#b30000';
+                delBtn.style.color = '#000';
+                delBtn.style.fontSize = '1em';
+                delBtn.style.fontWeight = 'bold';
+                delBtn.style.border = 'none';
+                
+
+                delBtn.addEventListener('click', async function (e) {
+                    e.stopPropagation();
+                    if (!confirm('Are you sure you want to delete this message?')) return;
+
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+                    const response = await fetch('/Chat/DeleteMessage', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': token
+                        },
+                        body: JSON.stringify({ messageId: delBtn.dataset.messageId })
+                    });
+
+                    if (response.ok) {
+                        div.remove();
+                    } else {
+                        alert('Failed to delete the message.');
+                    }
+                });
+
+                div.appendChild(delBtn);
+
+                div.addEventListener('mouseenter', () => {
+                    delBtn.style.display = 'inline';
+                });
+                div.addEventListener('mouseleave', () => {
+                    delBtn.style.display = 'none';
+                });
+            }
+
+            container.appendChild(div);
+            container.parentElement.scrollTop = container.parentElement.scrollHeight;
+        }
+
+            async function markAsRead(id) {
+                await fetch('/Chat/MarkAsRead', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(id),
+                });
+            }
+            const readMessageIds = new Set();
+
+            function updateTickForMessage(messageId)
+            {
+                    const messageDiv = document.querySelector(`[data-message-id="${messageId}"]`);
+               if (messageDiv && messageDiv.classList.contains('sent'))
+               {
+                  const tickSpan = messageDiv.querySelector('.message-ticks');
+                if (tickSpan)
+                {
+                    tickSpan.textContent = '✓✓';
+                    tickSpan.style.color = '#4CAF50';
+                }
+               }
+            }
+
+            function sendHeartbeat() {
+                if (window.connection && window.connection.state === signalR.HubConnectionState.Connected) {
+                    window.connection.invoke("Heartbeat").catch(console.error);
+                }
+            }
+
+            setInterval(sendHeartbeat, 25000);
+
+
+            function initSignalR() {
+                if (window.signalRInitialized) {
+                    console.log('SignalR connection already initialized.');
                     return;
                 }
-                console.log('Message saved via API.');
-
-                // Append locally
-                const messageContainer = document.getElementById("messageContainer");
-                const div = document.createElement("div");
-                div.classList.add("message", "sent");
-                div.textContent = msg;
-
-                const ts = document.createElement("div");
-                ts.className = "timestamp";
-                ts.textContent = new Date().toLocaleTimeString();
-
-                const rr = document.createElement("span");
-                rr.className = "read-receipt unread";
-                rr.innerHTML = "✓";
-
-                div.appendChild(rr);
-
-                messageContainer.appendChild(div);
-                messageContainer.appendChild(ts);
-                // messageContainer.scrollTop = messageContainer.scrollHeight;
-                    const chatWindow = document.getElementById("chatWindow");
-                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                window.signalRInitialized = true;
+                window.connection = new signalR.HubConnectionBuilder()
+                    .withUrl('/chathub')
+                    .build();
 
 
-                msgInput.value = "";
-            } catch (error) {
-                console.error('Error sending message:', error);
+                window.connection.on('ReceiveMessage', function (senderId, message, messageId) {
+                            console.log('ReceiveMessage event:', { senderId, message, messageId });
+                if (senderId === selectedUserId || senderId === currentUserId) {
+                    appendMessageDOM(message, messageId, senderId === currentUserId ? 'sent' : 'received');
+                    if (senderId !== currentUserId) {
+                        markAsRead(messageId);
+                    }
+                        if (senderId === currentUserId) {
+                    const input = document.getElementById('messageInput');
+                    if (input) input.value = '';
+                }
+                }
+            });
+
+
+                window.connection.on('MessageRead', function (messageId) {
+                    console.log("MessageRead event received for messageId: ", messageId);
+                    readMessageIds.add(messageId);
+                    updateTickForMessage(messageId);
+                });
+
+                window.connection.on('MessageDeleted', function(messageId) {
+                const messageDiv = document.querySelector(`[data-message-id="${messageId}"]`);
+                if(messageDiv) messageDiv.remove();
+            });
+
+                            window.connection.on('UserOnline', function(userId) {
+                const avatar = document.querySelector(`.user-item[data-userid="${userId}"] .user-avatar`);
+                if (avatar) {
+                    avatar.classList.add('online');
+                    avatar.classList.remove('offline');
+                }
+            });
+
+            window.connection.on('UserOffline', function(userId) {
+                const avatar = document.querySelector(`.user-item[data-userid="${userId}"] .user-avatar`);
+                if (avatar) {
+                    avatar.classList.remove('online');
+                    avatar.classList.add('offline');
+                }
+            });
+
+
+                    window.connection.on('InitialOnlineUsers', function (onlineUsers) {
+                document.querySelectorAll('.user-item').forEach(userItem => {
+                    const uid = userItem.dataset.userid;
+                    const dot = userItem.querySelector('.status-dot');
+                    if (onlineUsers.includes(uid)) {
+                        dot.classList.add('online');
+                        dot.classList.remove('offline');
+                    } else {
+                        dot.classList.remove('online');
+                        dot.classList.add('offline');
+                    }
+                });
+            });
+
+
+
+                   window.connection.start()
+            .then(() => {
+                console.log('SignalR connected');
+                const currentUserId = '@User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier)';
+                const myAvatar = document.querySelector(`.user-item[data-userid="${currentUserId}"] .user-avatar`);
+
+                if (myAvatar) {
+                    myAvatar.classList.add('online');
+                    myAvatar.classList.remove('offline');
+                }
+            })
+            .catch(err => console.error('SignalR connection error:', err));
             }
-        });
 
-        document.getElementById("messageInput").addEventListener("keydown", function(e) {
-            if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                document.getElementById("sendBtn").click();
+            const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const fontSize = 16;
+        const columns = Math.floor(canvas.width / fontSize);
+        const drops = new Array(columns).fill(1);
+
+        const characters = '010100101110100100111010101010100101001010101';
+
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < columns; i++) {
+                const text = characters.charAt(Math.floor(Math.random() * characters.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
             }
-        });
+        }
+
+        setInterval(draw, 33);
     </script>
+
+
 }

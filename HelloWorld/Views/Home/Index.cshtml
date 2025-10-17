@@ -1,12 +1,192 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
 }
+<canvas id="starCanvas"></canvas>
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-</div>
-<div class="text-center mt-5">
-    <h1>Chat with Hello World</h1>
-    <a href="@Url.Action("Index", "Chat")" class="btn btn-primary btn-lg">Go to Chat</a>
+<!-- Navbar with three flex parts -->
+<nav class="matrix-navbar">
+    <div class="navbar-left">
+        <a class="navbar-brand" href="/">
+            <img src="~/logo.png" alt="Logo" style="height:40px;">
+        </a>
+        <a href="@Url.Action("Index", "Home")" class="matrix-nav-link">Home</a>
+        <a href="@Url.Action("Index", "Chat")" class="matrix-nav-link">Chat</a>
+    </div>
+
+    <div class="navbar-right">
+        @if (User.Identity.IsAuthenticated)
+        {
+            <span class="matrix-logo">WELCOME @User.Identity.Name</span>
+        }
+        @if (User.Identity.IsAuthenticated)
+        {
+            <form method="post" asp-area="Identity" asp-page="/Account/Logout" id="logoutForm" class="d-inline">
+                <button type="submit" class="matrix-nav-link">Logout</button>
+            </form>
+            <form asp-controller="Account" asp-action="Delete" method="post" style="display:inline; margin-left: 10px;"
+                  onsubmit="return confirm('Are you sure you want to delete your account? This action cannot be undone!');">
+                <button type="submit" class="chat-btn">Delete Account</button>
+            </form>
+        }
+        else
+        {
+            <a href="@Url.Page("/Account/Register", new { area = "Identity" })" class="matrix-nav-link">Register</a>
+            <a href="@Url.Page("/Account/Login", new { area = "Identity" })" class="matrix-nav-link">Login</a>
+        }
+        
+    </div>
+</nav>
+
+<!-- Main content -->
+<div class="content-overlay">
+    <h1 class="matrix-font">Chat with</h1>
+    <h1 class="rubik-glitch display-4">HELLO WORLD;</h1>
+    <div class="mt-5">
+        <a href="@Url.Action("Index", "Chat")" class="btn btn-primary btn-lg matrix-button">Go to Chat</a>
+    </div>
 </div>
 
+
+@section Scripts {
+    <script>
+        (async function () {
+            const container = document.getElementById('mapContainer');
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
+            }
+
+            const svg = d3.select(container)
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+
+            const projection = d3.geoNaturalEarth1()
+                .scale(width / 1.6 / Math.PI)
+                .translate([width / 2, height / 2]);
+
+            const geoPath = d3.geoPath().projection(projection);
+
+            const world = await d3.json('https://unpkg.com/world-atlas@2.0.2/world/110m.json');
+            const countries = topojson.feature(world, world.objects.countries);
+
+            svg.append('g')
+                .selectAll('path')
+                .data(countries.features)
+                .join('path')
+                .attr('d', geoPath)
+                .attr('fill', 'none')
+                .attr('stroke', '#00ff00')
+                .attr('stroke-width', 0.6)
+                .attr('filter', 'drop-shadow(0 0 6px #00ff00)');
+
+            function pulse() {
+                svg.selectAll('path')
+                    .transition()
+                    .duration(1500)
+                    .ease(d3.easeSin)
+                    .attr('stroke-width', 1.5)
+                    .transition()
+                    .duration(1500)
+                    .ease(d3.easeSin)
+                    .attr('stroke-width', 0.6)
+                    .on('end', pulse);
+            }
+
+            pulse();
+
+            window.addEventListener('resize', () => {
+                const w = window.innerWidth;
+                const h = window.innerHeight;
+                svg.attr('width', w).attr('height', h);
+                projection.translate([w / 2, h / 2]);
+                svg.selectAll('path').attr('d', geoPath);
+            });
+        })();
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const canvas = document.getElementById('starCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let w, h;
+
+            const dpr = window.devicePixelRatio || 1;
+
+            class Star {
+                constructor() {
+                    this.reset();
+                }
+                reset() {
+                    this.x = Math.random() * w;
+                    this.y = Math.random() * h;
+                    this.radius = Math.random() * 1.5 + 0.5;
+                    this.baseAlpha = Math.random() * 0.6 + 0.4;
+                    this.alpha = this.baseAlpha;
+                    this.twinkleSpeed = Math.random() * 0.02 + 0.005;
+                    this.twinkleDirection = 1;
+                }
+                update() {
+                    this.alpha += this.twinkleSpeed * this.twinkleDirection;
+                    if (this.alpha >= 1) {
+                        this.alpha = 1;
+                        this.twinkleDirection = -1;
+                    }
+                    if (this.alpha <= 0.3) {
+                        this.alpha = 0.3;
+                        this.twinkleDirection = 1;
+                    }
+                }
+                draw() {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.shadowColor = `rgba(255, 255, 255, ${this.alpha})`;
+                    ctx.shadowBlur = 15;
+                    ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.closePath();
+                    ctx.restore();
+                }
+            }
+
+            let stars = [];
+            const numStars = 250;
+
+            function resize() {
+                w = window.innerWidth;
+                h = window.innerHeight;
+                canvas.width = w * dpr;
+                canvas.height = h * dpr;
+                canvas.style.width = w + 'px';
+                canvas.style.height = h + 'px';
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            }
+
+            function init() {
+                stars = [];
+                for (let i = 0; i < numStars; i++) {
+                    stars.push(new Star());
+                }
+            }
+
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+                ctx.fillRect(0, 0, w, h);
+
+                stars.forEach(star => {
+                    star.update();
+                    star.draw();
+                });
+
+                requestAnimationFrame(animate);
+            }
+
+            window.addEventListener('resize', init);
+
+            resize();
+            init();
+            animate();
+        });    </script>
+}
